@@ -12,59 +12,52 @@ if ( empty( $cf7sr_hc_key ) || empty( $cf7sr_hc_secret ) || is_admin() ) {
 }
 
 function enqueue_cf7sr_hcaptcha_script() {
-    global $cf7sr_hcaptcha_on;
-    if ( ! $cf7sr_hcaptcha_on ) {
-        return;
-    }
     $cf7sr_script_url = 'https://js.hcaptcha.com/1/api.js?onload=cf7srLoadHcaptcha&render=explicit';
     $language = get_option( 'cf7sr_hc_language' );
-    if ( ! empty( $language ) && ! empty( CF7SR_LANGUAGES[ $language ] ) ) {
+
+    if ( ! empty( $language ) && defined('CF7SR_LANGUAGES') && isset( CF7SR_LANGUAGES[ $language ] ) ) {
         $cf7sr_script_url .= '&hl=' . $language;
     }
-    $cf7sr_hc_key = get_option( 'cf7sr_hc_key' );
-    ?>
-    <script type="text/javascript">
-        var hcaptchaIds = [];
 
-        var cf7srLoadHcaptcha = function() {
+    $cf7sr_hc_key = get_option( 'cf7sr_hc_key' );
+
+    $inline_js = "
+        var hcaptchaIds = [];
+        window.cf7srLoadHcaptcha = function() {
             var widgets = document.querySelectorAll('.cf7sr-g-hcaptcha');
             for (var i = 0; i < widgets.length; ++i) {
                 var widget = widgets[i];
-                hcaptchaIds.push(
-                    hcaptcha.render(widget.id, {
-                        'sitekey' : <?php echo wp_json_encode( $cf7sr_hc_key ); ?>
-                    })
-                );
+                if (typeof hcaptcha !== 'undefined') {
+                    hcaptchaIds.push(
+                        hcaptcha.render(widget.id, {
+                            'sitekey' : " . wp_json_encode( $cf7sr_hc_key ) . "
+                        })
+                    );
+                }
             }
         };
 
-        function cf7srResetHcaptcha() {
+        window.cf7srResetHcaptcha = function() {
             for (var i = 0; i < hcaptchaIds.length; i++) {
-                hcaptcha.reset(hcaptchaIds[i]);
+                if (typeof hcaptcha !== 'undefined') {
+                    hcaptcha.reset(hcaptchaIds[i]);
+                }
             }
-        }
+        };
 
-        document.querySelectorAll('.wpcf7').forEach(function(element) {
-            element.addEventListener('wpcf7invalid', cf7srResetHcaptcha);
-            element.addEventListener('wpcf7mailsent', cf7srResetHcaptcha);
-            element.addEventListener('invalid.wpcf7', cf7srResetHcaptcha);
-            element.addEventListener('mailsent.wpcf7', cf7srResetHcaptcha);
-        });
-    </script>
-    <script src="<?php echo esc_url( $cf7sr_script_url ); ?>" async defer></script>
-    <?php
-}
-add_action( 'wp_footer', 'enqueue_cf7sr_hcaptcha_script' );
+        document.addEventListener('wpcf7invalid', cf7srResetHcaptcha);
+        document.addEventListener('wpcf7mailsent', cf7srResetHcaptcha);
+        document.addEventListener('invalid.wpcf7', cf7srResetHcaptcha);
+        document.addEventListener('mailsent.wpcf7', cf7srResetHcaptcha);
+    ";
 
-function cf7sr_hcaptcha_wpcf7_form_elements( $form ) {
-    $form = do_shortcode( $form );
-    return $form;
+    wp_enqueue_script( 'cf7sr-hcaptcha-api', $cf7sr_script_url, array(), null, true );
+    wp_add_inline_script( 'cf7sr-hcaptcha-api', $inline_js, 'before' );
 }
-add_filter( 'wpcf7_form_elements', 'cf7sr_hcaptcha_wpcf7_form_elements' );
 
 function cf7sr_hcaptcha_shortcode( $atts ) {
-    global $cf7sr_hcaptcha_on;
-    $cf7sr_hcaptcha_on       = true;
+    enqueue_cf7sr_hcaptcha_script();
+
     $cf7sr_hc_key   = get_option( 'cf7sr_hc_key' );
     $cf7sr_theme = ! empty( $atts['theme'] ) && 'dark' == $atts['theme'] ? 'dark' : 'light';
     $cf7sr_size  = ! empty( $atts['size'] ) && 'compact' == $atts['size'] ? 'compact' : 'normal';
@@ -86,44 +79,54 @@ function cf7sr_verify_hcaptcha( $result, $tags ) {
         return $result;
     }
 
-    $submission = WPCF7_Submission::get_instance();
-    $data       = $submission->get_posted_data();
-
-    $cf7_text  = do_shortcode( '[contact-form-7 id="' . $_wpcf7 . '"]' );
-    $cf7sr_hc_key = get_option( 'cf7sr_hc_key' );
-    if ( false === strpos( $cf7_text, $cf7sr_hc_key ) ) {
+    $contact_form = wpcf7_contact_form( $_wpcf7 );
+    if ( ! $contact_form ) {
         return $result;
     }
+
+    $form_body = $contact_form->prop( 'form' );
+    if ( false === strpos( $form_body, '[cf7sr-hcaptcha' ) ) {
+        return $result;
+    }
+
+    $submission = WPCF7_Submission::get_instance();
+    $data       = $submission->get_posted_data();
 
     $message = get_option( 'cf7sr_hc_message' );
     if ( empty( $message ) ) {
         $message = 'Invalid captcha';
     }
 
-    if (empty( $data['h-captcha-response'])) {
-        $result->invalidate(
-            array(
-                'type' => 'captcha',
-                'name' => 'cf7sr-hcaptcha',
-            ),
-            $message
-        );
+    if ( empty( $data['h-captcha-response'] ) ) {
+        $result->invalidate( array( 'type' => 'captcha', 'name' => 'cf7sr-hcaptcha' ), $message );
+        if ( function_exists( 'cf7sr_record_spam_block' ) ) {
+            cf7sr_record_spam_block( 'hcaptcha' );
+        }
         return $result;
     }
 
-    $cf7sr_hc_secret = get_option( 'cf7sr_hc_secret' );
-    $url          = 'https://api.hcaptcha.com/siteverify?secret=' . $cf7sr_hc_secret . '&response=' . $data['h-captcha-response'];
-    $request      = wp_remote_get( $url );
-    $body         = wp_remote_retrieve_body( $request );
-    $response     = json_decode( $body );
-    if ( ! ( isset( $response->success ) && 1 == $response->success ) ) {
-        $result->invalidate(
-            array(
-                'type' => 'captcha',
-                'name' => 'cf7sr-hcaptcha',
-            ),
-            $message
-        );
+    $request = wp_remote_post( 'https://api.hcaptcha.com/siteverify', array(
+        'method'    => 'POST',
+        'timeout'   => 15,
+        'body'      => array(
+            'secret'   => get_option( 'cf7sr_hc_secret' ),
+            'response' => sanitize_text_field( $data['h-captcha-response'] ),
+            'remoteip' => cf7sr_get_ip()
+        ),
+    ) );
+
+    if ( is_wp_error( $request ) || 200 !== wp_remote_retrieve_response_code( $request ) ) {
+        return $result;
+    }
+
+    $body     = wp_remote_retrieve_body( $request );
+    $response = json_decode( $body );
+
+    if ( empty( $response->success ) ) {
+        $result->invalidate( array( 'type' => 'captcha', 'name' => 'cf7sr-hcaptcha' ), $message );
+        if ( function_exists( 'cf7sr_record_spam_block' ) ) {
+            cf7sr_record_spam_block( 'hcaptcha' );
+        }
     }
 
     return $result;

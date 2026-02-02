@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 define( 'CF7SR_LANGUAGES', array(
     'ar'     => 'Arabic',
     'af'     => 'Afrikaans',
@@ -33,7 +37,7 @@ define( 'CF7SR_LANGUAGES', array(
     'gu'     => 'Gujarati',
     'iw'     => 'Hebrew',
     'hi'     => 'Hindi',
-    'hu'     => 'Hungarain',
+    'hu'     => 'Hungarian',
     'is'     => 'Icelandic',
     'id'     => 'Indonesian',
     'it'     => 'Italian',

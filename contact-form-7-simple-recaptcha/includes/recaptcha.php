@@ -12,59 +12,53 @@ if ( empty( $cf7sr_key ) || empty( $cf7sr_secret ) || is_admin() ) {
 }
 
 function enqueue_cf7sr_recaptcha_script() {
-    global $cf7sr_recaptcha_on;
-    if ( ! $cf7sr_recaptcha_on ) {
-        return;
-    }
     $cf7sr_script_url = 'https://www.google.com/recaptcha/api.js?onload=cf7srLoadRecaptcha&render=explicit';
     $language = get_option( 'cf7sr_language' );
-    if ( ! empty( $language ) && ! empty( CF7SR_LANGUAGES[ $language ] ) ) {
+
+    if ( ! empty( $language ) && defined('CF7SR_LANGUAGES') && isset( CF7SR_LANGUAGES[ $language ] ) ) {
         $cf7sr_script_url .= '&hl=' . $language;
     }
-    $cf7sr_key = get_option( 'cf7sr_key' );
-    ?>
-    <script type="text/javascript">
-        var recaptchaIds = [];
 
-        var cf7srLoadRecaptcha = function() {
+    $cf7sr_key = get_option( 'cf7sr_key' );
+
+    $inline_js = "
+        var recaptchaIds = [];
+        
+        window.cf7srLoadRecaptcha = function() {
             var widgets = document.querySelectorAll('.cf7sr-g-recaptcha');
             for (var i = 0; i < widgets.length; ++i) {
                 var widget = widgets[i];
-                recaptchaIds.push(
-                    grecaptcha.render(widget.id, {
-                        'sitekey' : <?php echo wp_json_encode( $cf7sr_key ); ?>
-                    })
-                );
+                if (typeof grecaptcha !== 'undefined') {
+                    recaptchaIds.push(
+                        grecaptcha.render(widget.id, {
+                            'sitekey' : " . wp_json_encode( $cf7sr_key ) . "
+                        })
+                    );
+                }
             }
         };
 
-        function cf7srResetRecaptcha() {
+        window.cf7srResetRecaptcha = function() {
             for (var i = 0; i < recaptchaIds.length; i++) {
-                grecaptcha.reset(recaptchaIds[i]);
+                if (typeof grecaptcha !== 'undefined') {
+                    grecaptcha.reset(recaptchaIds[i]);
+                }
             }
-        }
+        };
 
-        document.querySelectorAll('.wpcf7').forEach(function(element) {
-            element.addEventListener('wpcf7invalid', cf7srResetRecaptcha);
-            element.addEventListener('wpcf7mailsent', cf7srResetRecaptcha);
-            element.addEventListener('invalid.wpcf7', cf7srResetRecaptcha);
-            element.addEventListener('mailsent.wpcf7', cf7srResetRecaptcha);
-        });
-    </script>
-    <script src="<?php echo esc_url( $cf7sr_script_url ); ?>" async defer></script>
-    <?php
-}
-add_action( 'wp_footer', 'enqueue_cf7sr_recaptcha_script' );
+        document.addEventListener('wpcf7invalid', cf7srResetRecaptcha);
+        document.addEventListener('wpcf7mailsent', cf7srResetRecaptcha);
+        document.addEventListener('invalid.wpcf7', cf7srResetRecaptcha);
+        document.addEventListener('mailsent.wpcf7', cf7srResetRecaptcha);
+    ";
 
-function cf7sr_recaptcha_wpcf7_form_elements( $form ) {
-    $form = do_shortcode( $form );
-    return $form;
+    wp_enqueue_script( 'cf7sr-recaptcha-api', $cf7sr_script_url, array(), null, true );
+    wp_add_inline_script( 'cf7sr-recaptcha-api', $inline_js, 'before' );
 }
-add_filter( 'wpcf7_form_elements', 'cf7sr_recaptcha_wpcf7_form_elements' );
 
 function cf7sr_recaptcha_shortcode( $atts ) {
-    global $cf7sr_recaptcha_on;
-    $cf7sr_recaptcha_on       = true;
+    enqueue_cf7sr_recaptcha_script();
+
     $cf7sr_key   = get_option( 'cf7sr_key' );
     $cf7sr_theme = ! empty( $atts['theme'] ) && 'dark' == $atts['theme'] ? 'dark' : 'light';
     $cf7sr_type  = ! empty( $atts['type'] ) && 'audio' == $atts['type'] ? 'audio' : 'image';
@@ -73,8 +67,8 @@ function cf7sr_recaptcha_shortcode( $atts ) {
     $cf7sr_id       = 'cf7sr-' . uniqid();
 
     return '<div id="' . $cf7sr_id . '" class="cf7sr-g-recaptcha" data-theme="' . esc_attr( $cf7sr_theme ) . '" data-type="'
-        . esc_attr( $cf7sr_type ) . '" data-size="' . esc_attr( $cf7sr_size ) . '" data-sitekey="' . esc_attr( $cf7sr_key )
-        . '"></div><span class="wpcf7-form-control-wrap cf7sr-recaptcha" data-name="cf7sr-recaptcha"><input type="hidden" name="cf7sr-recaptcha" value="" class="wpcf7-form-control"></span>';
+            . esc_attr( $cf7sr_type ) . '" data-size="' . esc_attr( $cf7sr_size ) . '" data-sitekey="' . esc_attr( $cf7sr_key )
+            . '"></div><span class="wpcf7-form-control-wrap cf7sr-recaptcha" data-name="cf7sr-recaptcha"><input type="hidden" name="cf7sr-recaptcha" value="" class="wpcf7-form-control"></span>';
 }
 add_shortcode( 'cf7sr-simple-recaptcha', 'cf7sr_recaptcha_shortcode' );
 add_shortcode( 'cf7sr-recaptcha', 'cf7sr_recaptcha_shortcode' );
@@ -89,44 +83,52 @@ function cf7sr_verify_recaptcha( $result, $tags ) {
         return $result;
     }
 
-    $submission = WPCF7_Submission::get_instance();
-    $data       = $submission->get_posted_data();
-
-    $cf7_text  = do_shortcode( '[contact-form-7 id="' . $_wpcf7 . '"]' );
-    $cf7sr_key = get_option( 'cf7sr_key' );
-    if ( false === strpos( $cf7_text, $cf7sr_key ) ) {
+    $contact_form = wpcf7_contact_form( $_wpcf7 );
+    if ( ! $contact_form ) {
         return $result;
     }
+
+    $form_body = $contact_form->prop( 'form' );
+    if ( false === strpos( $form_body, '[cf7sr-recaptcha' ) && false === strpos( $form_body, '[cf7sr-simple-recaptcha' ) ) {
+        return $result;
+    }
+
+    $submission = WPCF7_Submission::get_instance();
+    $data       = $submission->get_posted_data();
 
     $message = get_option( 'cf7sr_message' );
     if ( empty( $message ) ) {
         $message = 'Invalid captcha';
     }
 
-    if (empty( $data['g-recaptcha-response'])) {
-        $result->invalidate(
-            array(
-                'type' => 'captcha',
-                'name' => 'cf7sr-recaptcha',
-            ),
-            $message
-        );
+    if ( empty( $data['g-recaptcha-response'] ) ) {
+        $result->invalidate( array( 'type' => 'captcha', 'name' => 'cf7sr-recaptcha' ), $message );
+        if ( function_exists( 'cf7sr_record_spam_block' ) ) {
+            cf7sr_record_spam_block( 'recaptcha' );
+        }
         return $result;
     }
 
-    $cf7sr_secret = get_option( 'cf7sr_secret' );
-    $url          = 'https://www.google.com/recaptcha/api/siteverify?secret=' . $cf7sr_secret . '&response=' . $data['g-recaptcha-response'];
-    $request      = wp_remote_get( $url );
-    $body         = wp_remote_retrieve_body( $request );
-    $response     = json_decode( $body );
-    if ( ! ( isset( $response->success ) && 1 == $response->success ) ) {
-        $result->invalidate(
-            array(
-                'type' => 'captcha',
-                'name' => 'cf7sr-recaptcha',
-            ),
-            $message
-        );
+    $request = wp_remote_post( 'https://www.google.com/recaptcha/api/siteverify', array(
+        'timeout' => 15,
+        'body' => array(
+            'secret'   => get_option( 'cf7sr_secret' ),
+            'response' => sanitize_text_field( $data['g-recaptcha-response'] ),
+            'remoteip' => cf7sr_get_ip()
+        ),
+    ) );
+
+    if ( is_wp_error( $request ) || 200 !== wp_remote_retrieve_response_code( $request ) ) {
+        return $result;
+    }
+
+    $response = json_decode( wp_remote_retrieve_body( $request ) );
+
+    if ( empty( $response->success ) ) {
+        $result->invalidate( array( 'type' => 'captcha', 'name' => 'cf7sr-recaptcha' ), $message );
+        if ( function_exists( 'cf7sr_record_spam_block' ) ) {
+            cf7sr_record_spam_block( 'recaptcha' );
+        }
     }
 
     return $result;
