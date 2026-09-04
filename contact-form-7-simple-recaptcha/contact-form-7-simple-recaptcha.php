@@ -1,8 +1,9 @@
 <?php
 /*
-Plugin Name: Contact Form 7 Captcha
+Plugin Name: LukasApps CAPTCHA tools for Contact Form 7
 Description: Add reCAPTCHA V2, hCAPTCHA or Cloudflare Turnstile CAPTCHA to Contact Form 7 using [cf7sr-recaptcha], [cf7sr-hcaptcha] or [cf7sr-turnstile] shortcode
-Version: 0.1.7
+Version: 0.1.9
+Requires at least: 6.2
 Author: 247wd
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'CF7SR_VERSION', '0.1.7' );
+define( 'CF7SR_VERSION', '0.1.9' );
 define( 'CF7SR_PLUGIN', __FILE__ );
 define( 'CF7SR_PLUGIN_BASENAME', plugin_basename( CF7SR_PLUGIN ) );
 define( 'CF7SR_PLUGIN_NAME', untrailingslashit( dirname( CF7SR_PLUGIN_BASENAME ) ) );
@@ -64,7 +65,41 @@ foreach ( $cf7sr_required_files as $file ) {
     return;
 }
 
-add_filter( 'wpcf7_form_elements', 'do_shortcode' );
+function cf7sr_alias_legacy_shortcode_syntax( $form ) {
+    $cf7sr_legacy_tags = array(
+        'cf7sr-simple-recaptcha',
+        'cf7sr-recaptcha',
+        'cf7sr-v3-recaptcha',
+        'cf7sr-hcaptcha',
+        'cf7sr-turnstile',
+    );
+
+    $cf7sr_tag_pattern = '/\[(' . implode( '|', array_map( 'preg_quote', $cf7sr_legacy_tags ) ) . ')((?:\s+[^\]]*)?)(\/?)\]/';
+
+    $cf7sr_result = preg_replace_callback(
+        $cf7sr_tag_pattern,
+        'cf7sr_alias_legacy_shortcode_callback',
+        (string) $form
+    );
+
+    return ( null === $cf7sr_result ) ? $form : $cf7sr_result;
+}
+
+function cf7sr_alias_legacy_shortcode_callback( $m ) {
+    $cf7sr_new_name = str_replace( '-', '_', $m[1] );
+
+    $cf7sr_new_attrs = preg_replace_callback(
+        '/([a-zA-Z_][a-zA-Z0-9_-]*)\s*=\s*(["\'])(.*?)\2/',
+        function ( $am ) {
+            return $am[1] . ':' . $am[3];
+        },
+        $m[2]
+    );
+
+    return '[' . $cf7sr_new_name . $cf7sr_new_attrs . $m[3] . ']';
+}
+add_filter( 'wpcf7_contact_form_property_form', 'cf7sr_alias_legacy_shortcode_syntax' );
+
 foreach ( $cf7sr_required_files as $file ) {
     require_once $file;
 }
@@ -124,17 +159,17 @@ function cf7sr_adminhtml() {
         echo '<p>' . wp_kses(
                 __( 'To use <strong>Contact Form 7 Captcha</strong> please install or update <strong>Contact Form 7</strong> plugin as current version is not supported.', 'contact-form-7-simple-recaptcha' ),
                 array( 'strong' => array() )
-        ) . '</p>';
+            ) . '</p>';
         return;
     }
 
     $tabs = array(
-            'stats'       => 'Statistics',
-            'recaptcha'   => 'Google reCaptcha v2',
-            'recaptcha-v3'   => 'Google reCaptcha v3',
-            'hcaptcha'    => 'hCaptcha',
-            'turnstile'   => 'Cloudflare Turnstile Captcha',
-            'insights'    => 'Insights',
+        'stats'       => 'Statistics',
+        'recaptcha'   => 'Google reCaptcha v2',
+        'recaptcha-v3'   => 'Google reCaptcha v3',
+        'hcaptcha'    => 'hCaptcha',
+        'turnstile'   => 'Cloudflare Turnstile Captcha',
+        'insights'    => 'Insights',
     );
 
     $tab = ! empty( $_GET['tab'] ) && isset( $tabs[ $_GET['tab'] ] ) ? $_GET['tab'] : 'stats';

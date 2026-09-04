@@ -56,45 +56,44 @@ function enqueue_cf7sr_recaptcha_script() {
     wp_add_inline_script( 'cf7sr-recaptcha-api', $inline_js, 'before' );
 }
 
-function cf7sr_recaptcha_shortcode( $atts ) {
+function cf7sr_recaptcha_form_tag_handler( $tag ) {
     enqueue_cf7sr_recaptcha_script();
 
     $cf7sr_key   = get_option( 'cf7sr_key' );
-    $cf7sr_theme = ! empty( $atts['theme'] ) && 'dark' == $atts['theme'] ? 'dark' : 'light';
-    $cf7sr_type  = ! empty( $atts['type'] ) && 'audio' == $atts['type'] ? 'audio' : 'image';
-    $cf7sr_size  = ! empty( $atts['size'] ) && 'compact' == $atts['size'] ? 'compact' : 'normal';
+    $cf7sr_theme = $tag->get_option( 'theme', '(dark|light)', true );
+    $cf7sr_theme = 'dark' === $cf7sr_theme ? 'dark' : 'light';
+    $cf7sr_type  = $tag->get_option( 'type', '(audio|image)', true );
+    $cf7sr_type  = 'audio' === $cf7sr_type ? 'audio' : 'image';
+    $cf7sr_size  = $tag->get_option( 'size', '(compact|normal)', true );
+    $cf7sr_size  = 'compact' === $cf7sr_size ? 'compact' : 'normal';
 
-    $cf7sr_id       = 'cf7sr-' . uniqid();
+    $cf7sr_id = 'cf7sr-' . uniqid();
 
-    return '<div id="' . $cf7sr_id . '" class="cf7sr-g-recaptcha" data-theme="' . esc_attr( $cf7sr_theme ) . '" data-type="'
-            . esc_attr( $cf7sr_type ) . '" data-size="' . esc_attr( $cf7sr_size ) . '" data-sitekey="' . esc_attr( $cf7sr_key )
-            . '"></div><span class="wpcf7-form-control-wrap cf7sr-recaptcha" data-name="cf7sr-recaptcha"><input type="hidden" name="cf7sr-recaptcha" value="" class="wpcf7-form-control"></span>';
+    return '<div id="' . esc_attr( $cf7sr_id ) . '" class="cf7sr-g-recaptcha" data-theme="' . esc_attr( $cf7sr_theme ) . '" data-type="'
+        . esc_attr( $cf7sr_type ) . '" data-size="' . esc_attr( $cf7sr_size ) . '" data-sitekey="' . esc_attr( $cf7sr_key )
+        . '"></div><span class="wpcf7-form-control-wrap cf7sr-recaptcha" data-name="cf7sr-recaptcha"><input type="hidden" name="cf7sr-recaptcha" value="" class="wpcf7-form-control"></span>';
 }
-add_shortcode( 'cf7sr-simple-recaptcha', 'cf7sr_recaptcha_shortcode' );
-add_shortcode( 'cf7sr-recaptcha', 'cf7sr_recaptcha_shortcode' );
 
-function cf7sr_verify_recaptcha( $result, $tags ) {
+function cf7sr_register_recaptcha_form_tag() {
+    wpcf7_add_form_tag(
+        array( 'cf7sr_simple_recaptcha', 'cf7sr_recaptcha' ),
+        'cf7sr_recaptcha_form_tag_handler',
+        array( 'display-block' => true )
+    );
+}
+add_action( 'wpcf7_init', 'cf7sr_register_recaptcha_form_tag' );
+
+function cf7sr_verify_recaptcha( $result, $tag ) {
     if ( ! class_exists( 'WPCF7_Submission' ) ) {
         return $result;
     }
 
-    $_wpcf7 = ! empty( $_POST['_wpcf7'] ) ? absint( $_POST['_wpcf7'] ) : 0;
-    if ( empty( $_wpcf7 ) ) {
-        return $result;
-    }
-
-    $contact_form = wpcf7_contact_form( $_wpcf7 );
-    if ( ! $contact_form ) {
-        return $result;
-    }
-
-    $form_body = $contact_form->prop( 'form' );
-    if ( false === strpos( $form_body, '[cf7sr-recaptcha' ) && false === strpos( $form_body, '[cf7sr-simple-recaptcha' ) ) {
-        return $result;
-    }
-
     $submission = WPCF7_Submission::get_instance();
-    $data       = $submission->get_posted_data();
+    if ( ! $submission ) {
+        return $result;
+    }
+
+    $data = $submission->get_posted_data();
 
     $message = get_option( 'cf7sr_message' );
     if ( empty( $message ) ) {
@@ -102,7 +101,7 @@ function cf7sr_verify_recaptcha( $result, $tags ) {
     }
 
     if ( empty( $data['g-recaptcha-response'] ) ) {
-        $result->invalidate( array( 'type' => 'captcha', 'name' => 'cf7sr-recaptcha' ), $message );
+        $result->invalidate( array( 'type' => 'cf7sr_recaptcha', 'name' => 'cf7sr-recaptcha' ), $message );
         if ( function_exists( 'cf7sr_record_spam_block' ) ) {
             cf7sr_record_spam_block( 'recaptcha' );
         }
@@ -125,7 +124,7 @@ function cf7sr_verify_recaptcha( $result, $tags ) {
     $response = json_decode( wp_remote_retrieve_body( $request ) );
 
     if ( empty( $response->success ) ) {
-        $result->invalidate( array( 'type' => 'captcha', 'name' => 'cf7sr-recaptcha' ), $message );
+        $result->invalidate( array( 'type' => 'cf7sr_recaptcha', 'name' => 'cf7sr-recaptcha' ), $message );
         if ( function_exists( 'cf7sr_record_spam_block' ) ) {
             cf7sr_record_spam_block( 'recaptcha' );
         }
@@ -133,4 +132,5 @@ function cf7sr_verify_recaptcha( $result, $tags ) {
 
     return $result;
 }
-add_filter( 'wpcf7_validate', 'cf7sr_verify_recaptcha', 20, 2 );
+add_filter( 'wpcf7_validate_cf7sr_recaptcha', 'cf7sr_verify_recaptcha', 20, 2 );
+add_filter( 'wpcf7_validate_cf7sr_simple_recaptcha', 'cf7sr_verify_recaptcha', 20, 2 );

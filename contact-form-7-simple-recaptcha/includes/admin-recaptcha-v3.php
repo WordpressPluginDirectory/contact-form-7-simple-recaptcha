@@ -71,7 +71,7 @@ settings_errors( 'cf7sr_messages' );
 <p class="cf7sr-title cf7sr-info-msg">
     <?php
     echo wp_kses(
-        __( 'To add reCaptcha V3 to Contact Form 7 form, add <strong>[cf7sr-v3-recaptcha]</strong> in your form.', 'contact-form-7-simple-recaptcha' ),
+        __( 'To add reCaptcha V3 to Contact Form 7 form, add <strong>[cf7sr_v3_recaptcha]</strong> in your form.', 'contact-form-7-simple-recaptcha' ),
         array( 'strong' => array() )
     );
     ?>

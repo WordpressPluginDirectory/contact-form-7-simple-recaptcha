@@ -20,10 +20,10 @@ if (
     update_option( 'cf7sr_ts_language', $cf7sr_ts_language );
 
     add_settings_error(
-            'cf7sr_messages',
-            'cf7sr_message',
-            __( 'Settings saved successfully.', 'contact-form-7-simple-recaptcha' ),
-            'updated'
+        'cf7sr_messages',
+        'cf7sr_message',
+        __( 'Settings saved successfully.', 'contact-form-7-simple-recaptcha' ),
+        'updated'
     );
 }
 
@@ -74,25 +74,25 @@ settings_errors( 'cf7sr_messages' );
 <p class="cf7sr-title cf7sr-info-msg">
     <?php
     echo wp_kses(
-            __( 'To add Cloudflare Turnstile CAPTCHA to Contact Form 7 form, add <strong>[cf7sr-turnstile]</strong> in your form (preferable above submit button)', 'contact-form-7-simple-recaptcha' ),
-            array( 'strong' => array() )
+        __( 'To add Cloudflare Turnstile CAPTCHA to Contact Form 7 form, add <strong>[cf7sr_turnstile]</strong> in your form (preferable above submit button)', 'contact-form-7-simple-recaptcha' ),
+        array( 'strong' => array() )
     );
     ?>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default size of CAPTCHA is normal, for compact or flexible use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-turnstile size="compact"] or [cf7sr-turnstile size="flexible"]</strong></p>
+    <strong>[cf7sr_turnstile size:compact] or [cf7sr_turnstile size:flexible]</strong></p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default color theme of CAPTCHA is auto, for dark or light theme use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-turnstile theme="dark"] or [cf7sr-turnstile theme="light"]</strong>
+    <strong>[cf7sr_turnstile theme:dark] or [cf7sr_turnstile theme:light]</strong>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default appearance is always, for execute or interaction-only use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-turnstile appearance="execute"] or [cf7sr-turnstile appearance="interaction-only"]</strong>
+    <strong>[cf7sr_turnstile appearance:execute] or [cf7sr_turnstile appearance:interaction-only]</strong>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'You can combine multiple attributes, sample shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-turnstile size="compact" theme="dark" appearance="interaction-only"]</strong>
+    <strong>[cf7sr_turnstile size:compact theme:dark appearance:interaction-only]</strong>
 </p>
 
 <div class="cf7sr-generate">

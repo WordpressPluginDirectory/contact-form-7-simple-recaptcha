@@ -20,10 +20,10 @@ if (
     update_option( 'cf7sr_language', $cf7sr_language );
 
     add_settings_error(
-            'cf7sr_messages',
-            'cf7sr_message',
-            __( 'Settings saved successfully.', 'contact-form-7-simple-recaptcha' ),
-            'updated'
+        'cf7sr_messages',
+        'cf7sr_message',
+        __( 'Settings saved successfully.', 'contact-form-7-simple-recaptcha' ),
+        'updated'
     );
 }
 
@@ -74,25 +74,25 @@ settings_errors( 'cf7sr_messages' );
 <p class="cf7sr-title cf7sr-info-msg">
     <?php
     echo wp_kses(
-            __( 'To add reCaptcha to Contact Form 7 form, add <strong>[cf7sr-recaptcha]</strong> in your form (preferable above submit button)', 'contact-form-7-simple-recaptcha' ),
-            array( 'strong' => array() )
+        __( 'To add reCaptcha to Contact Form 7 form, add <strong>[cf7sr_recaptcha]</strong> in your form (preferable above submit button)', 'contact-form-7-simple-recaptcha' ),
+        array( 'strong' => array() )
     );
     ?>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default size of reCaptcha is normal, for compact size use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-recaptcha size="compact"]</strong></p>
+    <strong>[cf7sr_recaptcha size:compact]</strong></p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default color theme of reCaptcha is light, for dark theme use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-recaptcha theme="dark"]</strong>
+    <strong>[cf7sr_recaptcha theme:dark]</strong>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default type of reCaptcha is image, for audio type use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-recaptcha type="audio"]</strong>
+    <strong>[cf7sr_recaptcha type:audio]</strong>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'You can combine multiple attributes, sample shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-recaptcha  size="compact" theme="dark"]</strong>
+    <strong>[cf7sr_recaptcha size:compact theme:dark]</strong>
 </p>
 
 <div class="cf7sr-generate">

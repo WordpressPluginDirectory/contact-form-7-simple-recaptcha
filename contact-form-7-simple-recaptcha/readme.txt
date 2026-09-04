@@ -1,9 +1,9 @@
-=== Contact Form 7 Captcha ===
+=== LukasApps CAPTCHA tools for Contact Form 7 ===
 Contributors: 247wd
-Tags: contact form 7, captcha, recaptcha, spam protection, hcaptcha, cloudflare turnstile, cf7, anti-spam, bot protection, lead tracking
-Requires at least: 4.1.2
-Tested up to: 6.9
-Stable tag: 0.1.7
+Tags: contact form 7, captcha, recaptcha, hcaptcha, cloudflare turnstile
+Requires at least: 6.2
+Tested up to: 7.1
+Stable tag: 0.1.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,8 +17,8 @@ Easy integration and supports multiple forms on a single page.
 
 Choose the CAPTCHA provider that works best for you:
 
-- **Google reCAPTCHA V2** — The industry-standard "I'm not a robot" checkbox, trusted by millions of sites.
-- **Google reCAPTCHA V3** — The industry-standard invisible score-based verification, trusted by millions of sites.
+- **Google reCAPTCHA V2** — Google's classic "I'm not a robot" checkbox.
+- **Google reCAPTCHA V3** — Google's invisible, score-based bot verification.
 - **hCAPTCHA** — A privacy-first alternative that offers robust bot protection while keeping user data secure.
 - **Cloudflare Turnstile** — A modern CAPTCHA that verifies users in the background, only requiring a simple click if the visitor appears suspicious.
 
@@ -46,15 +46,13 @@ Go beyond just blocking spam. Submission Insights gives you full visibility into
 - **Source Page** — Know exactly which page on your site the form was filled out on.
 - **Device & Browser** — Get technical details about the sender's setup.
 
-== 🚀 Want More? Upgrade to CF7 Captcha Pro ==
+== Want More? Upgrade to CF7 Captcha Pro ==
 
-This free version gives you solid CAPTCHA protection. But the smartest bots are already solving CAPTCHAs.
-
-**CF7 Captcha Pro** adds six extra layers of invisible spam defense on top of what you already have here, plus a full set of tools to capture and act on every lead your forms collect.
+This free version gives you solid CAPTCHA protection. **CF7 Captcha Pro** adds six extra layers of spam defense on top of what you already have here, plus a full set of tools to capture and act on every lead your forms collect.
 
 === What you get with Pro ===
 
-**6-Layer Spam Defense** — stops 99.9% of spam without ever bothering your visitors:
+**6-Layer Spam Defense** — additional spam-blocking methods that work quietly in the background:
 - **Advanced Honeypot** — invisible trap fields with names that regenerate every 24 hours.
 - **Time Limit Validation** — bots submit in 0.2 seconds. Humans take 15–30. This blocks anything that moves too fast (or stays too long).
 - **Rate Limiting** — caps submissions per IP so bot networks can't flood your inbox or burn through your email quota.
@@ -62,7 +60,7 @@ This free version gives you solid CAPTCHA protection. But the smartest bots are 
 - **IP Pattern Blocking** — block single IPs, wildcards, CIDR ranges, or entire subnets when you know exactly where an attack is coming from.
 - **Word Filter** — scans every submission for spam keywords, phishing URLs, and known scam phrases before it reaches you.
 
-**Lead Recovery** — 70% of people who start filling out a form never submit it. Pro captures their data in real-time as they type, so you can follow up on leads that would otherwise vanish.
+**Lead Recovery** — captures form data in real-time as visitors type, so you don't lose leads from abandoned forms.
 
 **Database Storage & Export** — every submission is saved with full metadata (IP, browser, referrer, timestamp). Export to CSV, Excel, JSON, or PDF whenever you need it. No more lost leads if your email fails.
 
@@ -76,6 +74,24 @@ This free version gives you solid CAPTCHA protection. But the smartest bots are 
 
 👉 **[Get CF7 Captcha Pro](https://lukasapps.de/wordpress/plugins/cf7-captcha-pro/)**
 
+== External services ==
+
+This plugin relies on third-party CAPTCHA providers to detect and block spam submissions on your Contact Form 7 forms. Only the service(s) you configure and activate in the plugin settings are contacted.
+
+**Google reCAPTCHA (v2 and v3)**
+This plugin loads the Google reCAPTCHA script and sends the CAPTCHA response token to Google's verification API when a protected form is submitted, in order to confirm the submission is not from a bot. The visitor's IP address is also sent as part of this verification.
+This service is provided by Google: [Terms of Service](https://policies.google.com/terms), [Privacy Policy](https://policies.google.com/privacy).
+
+**hCaptcha**
+This plugin loads the hCaptcha script and sends the CAPTCHA response token to hCaptcha's verification API when a protected form is submitted, in order to confirm the submission is not from a bot.
+This service is provided by hCaptcha: [Terms of Service](https://www.hcaptcha.com/terms), [Privacy Policy](https://www.hcaptcha.com/privacy).
+
+**Cloudflare Turnstile**
+This plugin loads the Cloudflare Turnstile script and sends the CAPTCHA response token to Cloudflare's verification API when a protected form is submitted, in order to confirm the submission is not from a bot.
+This service is provided by Cloudflare: [Terms of Service](https://www.cloudflare.com/website-terms/), [Privacy Policy](https://www.cloudflare.com/privacypolicy/).
+
+These services are only contacted when the corresponding CAPTCHA type is enabled and configured with valid API keys.
+
 == Installation ==
 
 1. Upload the entire contents of the zip file to your plugin directory
@@ -83,6 +99,16 @@ This free version gives you solid CAPTCHA protection. But the smartest bots are 
 3. Configure plugin from Admin => CF7 Captcha
 
 == Changelog ==
+
+= 0.1.9 =
+* Security fix: A vulnerability allowed an unauthenticated visitor to trigger execution of shortcode content when submitting a form. Reported responsibly by Jakub Herman via WPScan/Jetpack (Automattic). All users are strongly encouraged to update immediately.
+
+= 0.1.8 =
+* Fix: Updated "Requires at least" version to match plugin headers and readme.
+* Fix: Reduced tags list to comply with the 5-tag limit.
+* Improvement: Documented third-party services (Google reCAPTCHA, hCaptcha, Cloudflare Turnstile) in the readme.
+* Improvement: Revised plugin description to remove unverifiable marketing claims.
+* Security: Added proper output escaping to shortcode callbacks to prevent XSS.
 
 = 0.1.7 =
 * New: Introduced [cf7sr-insights] tag - easily collect sender's IP, Source Page, and Browser info.

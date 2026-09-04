@@ -77,22 +77,22 @@ settings_errors( 'cf7sr_messages' );
 <p class="cf7sr-title cf7sr-info-msg">
     <?php
     echo wp_kses(
-            __( 'To add hCaptcha to Contact Form 7 form, add <strong>[cf7sr-hcaptcha]</strong> in your form (preferable above submit button)', 'contact-form-7-simple-recaptcha' ),
-            array( 'strong' => array() )
+        __( 'To add hCaptcha to Contact Form 7 form, add <strong>[cf7sr_hcaptcha]</strong> in your form (preferable above submit button)', 'contact-form-7-simple-recaptcha' ),
+        array( 'strong' => array() )
     );
     ?>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default size of hCaptcha is normal, for compact size use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-hcaptcha size="compact"]</strong>
+    <strong>[cf7sr_hcaptcha size:compact]</strong>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'Default color theme of hCaptcha is light, for dark theme use shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-hcaptcha theme="dark"]</strong>
+    <strong>[cf7sr_hcaptcha theme:dark]</strong>
 </p>
 <p class="cf7sr-title cf7sr-info-msg">
     <?php esc_html_e( 'You can combine multiple attributes, sample shortcode:', 'contact-form-7-simple-recaptcha' ); ?>
-    <strong>[cf7sr-hcaptcha size="compact" theme="dark"]</strong>
+    <strong>[cf7sr_hcaptcha size:compact theme:dark]</strong>
 </p>
 
 <div class="cf7sr-generate">
